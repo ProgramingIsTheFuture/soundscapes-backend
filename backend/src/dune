@@ -1,0 +1,5 @@
+(executable
+ (public_name backend)
+ (name main)
+ (libraries backend opium)
+ (preprocess (pps ppx_deriving_yojson)))
