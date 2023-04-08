@@ -1,0 +1,4 @@
+(library
+ (name db)
+ (libraries types ppx_rapper_lwt caqti caqti-driver-postgresql)
+ (preprocess (pps ppx_rapper)))

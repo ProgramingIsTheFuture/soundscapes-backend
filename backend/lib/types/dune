@@ -1,0 +1,4 @@
+(library
+ (name types)
+ (libraries digestif base64 uuidm)
+ (preprocess (pps ppx_yojson_conv ppx_sexp_conv)))
