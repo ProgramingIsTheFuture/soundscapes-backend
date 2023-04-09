@@ -2,46 +2,50 @@ import { Head } from "$fresh/runtime.ts";
 import MathJax from "../components/MathJax.tsx";
 import LoadMath from "../islands/LoadMath.tsx";
 import { Axiom, ProofTree, UnaryInf } from "../components/ProofTree.tsx";
-
+import { getCookies } from "std/http/cookie.ts";
 import { Handlers, PageProps } from "$fresh/server.ts";
+import { decode } from "../helpers/encoders.ts";
 
-interface User {
+type User = {
+  id: string;
+  email: string;
   username: string;
   password: string;
-}
+  role: number;
+};
 
 export const handler: Handlers<User | null> = {
-  async GET(_, ctx) {
-    const resp = await fetch("http://localhost:3000");
-    if (resp.status === 404) {
+  GET(req, ctx) {
+    const cookies = getCookies(req.headers);
+    if (!cookies.auth) {
       return ctx.render(null);
     }
-    const user: User = await resp.json();
+    const user = decode<{ user: User; token: string }>(cookies.auth).user;
     return ctx.render(user);
   },
 };
 
-export default function Home(props: PageProps) {
+export default function Home(props: PageProps<User | null>) {
   return (
     <>
       <Head>
         <title>Fresh App</title>
+        <meta name="description" content={"Good webpage"} />
+        <script src="https://cdn.twind.style"></script>
       </Head>
-      <div class="p-4 mx-auto max-w-screen-md">
+      <div className="p-4 mx-auto max-w-screen-md">
         <img
           src="/logo.svg"
-          class="w-32 h-32"
+          className="w-32 h-32"
           alt="the fresh logo: a sliced lemon dripping with juice"
         />
-        <p class="my-6">
-          Hello {props.data.username} {props.data.password}.
-          <MathJax>
-            <ProofTree>
-              <Axiom>$(\lambda x. x)$</Axiom>
-              <UnaryInf>$(\lambda x. x)$</UnaryInf>
-            </ProofTree>
-          </MathJax>
-        </p>
+        <MathJax>
+          <ProofTree>
+            <Axiom>$(\lambda x. x)$</Axiom>
+            <UnaryInf>$(\lambda x. x)$</UnaryInf>
+          </ProofTree>
+        </MathJax>
+        <p>{JSON.stringify(props.data)}</p>
         <LoadMath />
       </div>
     </>
