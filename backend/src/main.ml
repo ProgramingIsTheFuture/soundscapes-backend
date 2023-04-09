@@ -33,7 +33,9 @@ let error_handler (f : Request.t -> 'a Lwt.t) req : 'b Lwt.t =
       Response.of_json ~status:`Internal_server_error
         (`Assoc [ ("message", `String ("JSON: " ^ e)) ])
       |> Lwt.return
-  | _ ->
+  | e ->
+      let msg = Printexc.to_string e and stack = Printexc.get_backtrace () in
+      Printf.eprintf "there was an error: %s%s\n" msg stack;
       Response.of_json ~status:`Internal_server_error
         (`Assoc [ ("message", `String "Erro") ])
       |> Lwt.return
@@ -73,9 +75,9 @@ let login req =
     let token = encode_token user_db in
     user_db |> yojson_of_user
     |> Response.of_json ~status:`OK
-         ~headers:(Headers.add Headers.empty "Auth" token)
+         ~headers:(Headers.add Headers.empty "auth" token)
     |> Lwt.return
-  else response ~status:`Bad_request "Falha ao fazer login"
+  else response ~status:`Bad_request "Fail to login"
 
 let auth_middleware =
   let filter handler req =
