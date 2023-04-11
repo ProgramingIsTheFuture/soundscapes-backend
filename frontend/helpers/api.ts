@@ -16,7 +16,7 @@ export const post = async <T>(
 ): Promise<Response> => {
   return await fetch(`http://localhost:3000/${path}`, {
     headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(data),
+    body: typeof data === "string" ? data : JSON.stringify(data),
     method: "POST",
   });
 };

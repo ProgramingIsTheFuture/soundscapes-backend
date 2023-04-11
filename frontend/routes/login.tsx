@@ -1,9 +1,10 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { setCookie } from "std/http/cookie.ts";
 import { post } from "../helpers/api.ts";
-import { Head } from "$fresh/runtime.ts";
 import Message from "../islands/Message.tsx";
 import { encode } from "../helpers/encoders.ts";
+import Template from "../components/Template.tsx";
+import { User } from "../helpers/types.ts";
 
 type data = {
   message: string | null | undefined;
@@ -34,7 +35,7 @@ export const handler: Handlers = {
     const headers = new Headers();
     setCookie(headers, {
       name: "auth",
-      value: encode({ token, user: d }), // this should be a unique value for each session
+      value: encode<{ token: string; user: User | null }>({ token, user: d }), // this should be a unique value for each session
       maxAge: 120,
       sameSite: "Lax", // this is important to prevent CSRF attacks
       domain: url.hostname,
@@ -52,12 +53,8 @@ export const handler: Handlers = {
 
 const Login = (props: PageProps<data>) => {
   return (
-    <>
-      <Head>
-        <title>Login</title>
-        <meta name="description" content={"Good webpage"} />
-      </Head>
-      <div className="mx-auto max-w-screen-md flex flex-col justify-center items-center">
+    <Template user={null} title={"Login | Web Classes"}>
+      <div className="flex flex-col justify-center items-center">
         <Message message={props.data?.message} timeout={5000} />
         <form className={"w-9/12"} method={"POST"}>
           <label className={"block flex flex-col"}>
@@ -96,7 +93,7 @@ const Login = (props: PageProps<data>) => {
           </label>
         </form>
       </div>
-    </>
+    </Template>
   );
 };
 

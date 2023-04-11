@@ -1,7 +1,7 @@
-import { Handlers } from "$fresh/server.ts";
-import { Head } from "$fresh/runtime.ts";
+import { Handlers, PageProps } from "$fresh/server.ts";
 import { post } from "../helpers/api.ts";
 import Message from "../islands/Message.tsx";
+import Template from "../components/Template.tsx";
 
 export const handler: Handlers = {
   async POST(req, ctx) {
@@ -29,17 +29,13 @@ export const handler: Handlers = {
   },
 };
 
-const Register = ({ message }: { message: string }) => {
+const Register = (props: PageProps<{ message: string }>) => {
   return (
-    <>
-      <Head>
-        <title>Register</title>
-        <meta name="description" content={"Good webpage"} />
-      </Head>
+    <Template user={null} title={"Register | Web Classes"}>
       <div
-        className={"mx-auto max-w-screen-md flex flex-col justify-center items-center"}
+        className={"flex flex-col justify-center items-center"}
       >
-        <Message message={message} timeout={5000} />
+        <Message message={props.data?.message} timeout={5000} />
         <form className={"w-9/12"} method={"POST"}>
           <label className={"block flex flex-col"}>
             <div className={"mt-5"}>
@@ -89,7 +85,7 @@ const Register = ({ message }: { message: string }) => {
           </label>
         </form>
       </div>
-    </>
+    </Template>
   );
 };
 
