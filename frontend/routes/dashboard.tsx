@@ -1,23 +1,20 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
-import { getCookies } from "std/http/cookie.ts";
-import { decode } from "../helpers/encoders.ts";
 import Template from "../components/Template.tsx";
 import { User } from "../helpers/types.ts";
+import { handle_auth } from "../helpers/auth.ts";
 
 export const handler: Handlers<User> = {
-  GET(req, ctx) {
-    const cookies = getCookies(req.headers);
-    if (!cookies.auth) {
+  async GET(req, ctx) {
+    return await handle_auth(req, () => {
       const headers = new Headers();
       headers.set("location", "/");
       return new Response(null, {
         status: 303,
         headers,
       });
-    }
-
-    const user = decode<{ user: User; token: string }>(cookies.auth).user;
-    return ctx.render(user);
+    }, (u) => {
+      return ctx.render(u);
+    });
   },
 };
 

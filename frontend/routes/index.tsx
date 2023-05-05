@@ -1,20 +1,18 @@
 import MathJax from "../components/MathJax.tsx";
 import LoadMath from "../islands/LoadMath.tsx";
 import { Axiom, ProofTree, UnaryInf } from "../components/ProofTree.tsx";
-import { getCookies } from "std/http/cookie.ts";
 import { Handlers, PageProps } from "$fresh/server.ts";
-import { decode } from "../helpers/encoders.ts";
 import Template from "../components/Template.tsx";
 import { User } from "../helpers/types.ts";
+import { handle_auth } from "../helpers/auth.ts";
 
 export const handler: Handlers<User | null> = {
   GET(req, ctx) {
-    const cookies = getCookies(req.headers);
-    if (!cookies.auth) {
+    return handle_auth(req, () => {
       return ctx.render(null);
-    }
-    const user = decode<{ user: User; token: string }>(cookies.auth).user;
-    return ctx.render(user);
+    }, (u) => {
+      return ctx.render(u);
+    });
   },
 };
 
