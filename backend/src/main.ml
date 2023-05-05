@@ -5,6 +5,7 @@ open Lwt.Infix
 
 (* docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=root -e POSTGRES_DB=pweb -d -p 5432:5432 postgres *)
 
+let logged_in_tokens : string list ref = ref []
 let ( let* ) = ( >>= )
 let ( let- ) = Lwt.catch
 
@@ -48,6 +49,28 @@ let hello _req =
   let r = u |> List.map yojson_of_user in
   `List r |> Response.of_json ~status:`OK |> Lwt.return
 
+let is_auth req =
+  let token = Request.header "auth" req in
+  let resp v =
+    Response.of_json ~status:`OK (`Assoc [ ("login", `Bool v) ]) |> Lwt.return
+  in
+  match token with
+  | Some t ->
+      let r = List.find_opt (fun a -> a = t) !logged_in_tokens in
+      Format.printf "%b\n@." (Option.is_none r);
+      resp (Option.is_none r)
+  | None -> resp true
+
+let logout req =
+  let token = Request.header "auth" req in
+  match token with
+  | Some t ->
+      let () =
+        logged_in_tokens := List.filter (fun a -> a <> t) !logged_in_tokens
+      in
+      response ~status:`OK "Done!"
+  | None -> response ~status:`OK "Empty token!"
+
 let register req =
   let* user = Request.to_json req in
   let* user =
@@ -73,6 +96,7 @@ let login req =
   let* user_db = select_user user_login.email in
   if hash user_login.password = user_db.password then
     let token = encode_token user_db in
+    let () = logged_in_tokens := token :: !logged_in_tokens in
     user_db |> yojson_of_user
     |> Response.of_json ~status:`OK
          ~headers:(Headers.add Headers.empty "auth" token)
@@ -111,4 +135,5 @@ let () =
      @@ Middleware.allow_cors ~origins:[ "http://localhost:8000" ] ()
   |> App.middleware auth_middleware
   |> App.post "/register" register
-  |> App.post "/login" login |> App.get "/" hello |> App.run_command
+  |> App.post "/login" login |> App.get "/is_auth" is_auth
+  |> App.get "/logout" logout |> App.get "/" hello |> App.run_command
