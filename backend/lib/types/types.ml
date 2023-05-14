@@ -6,6 +6,7 @@ type user = {
   email : string;
   password : string; [@default ""] [@yojson_drop_if fun _ -> true]
   role : int; [@default 2]
+      (* mutable token : string; [@default ""] [@yojson_drop_if fun t -> t = ""] *)
 }
 [@@deriving yojson, sexp] [@@yojson.allow_extra_fields]
 
@@ -23,5 +24,5 @@ let encode_token user =
 
 exception InvalidToken of string
 
-let decode_token token =
-  Base64.decode_exn token |> Yojson.Safe.from_string |> user_of_yojson
+let decode_token token = Base64.decode_exn token
+let user_of_string u = Yojson.Safe.from_string u |> user_of_yojson

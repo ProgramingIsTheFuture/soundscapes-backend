@@ -44,22 +44,34 @@ let error_handler (f : Request.t -> 'a Lwt.t) req : 'b Lwt.t =
 let response ~status msg =
   Response.of_json ~status (`Assoc [ ("message", `String msg) ]) |> Lwt.return
 
-let hello _req =
-  read_all_users () >>= fun u ->
-  let r = u |> List.map yojson_of_user in
-  `List r |> Response.of_json ~status:`OK |> Lwt.return
+let req_user_key = Context.Key.create ("user", sexp_of_user)
+
+let admin_users req =
+  let user = Opium.Context.find_exn req_user_key req.Request.env in
+  if user.role <> 1 then Lwt.fail (request_error "Not allowed" `Forbidden)
+  else
+    read_all_users () >>= fun u ->
+    let r = u |> List.map yojson_of_user in
+    `List r |> Response.of_json ~status:`OK |> Lwt.return
 
 let is_auth req =
   let token = Request.header "auth" req in
-  let resp v =
-    Response.of_json ~status:`OK (`Assoc [ ("login", `Bool v) ]) |> Lwt.return
+  let resp v user =
+    match user with
+    | Some u ->
+        Response.of_json ~status:`OK
+          (`Assoc [ ("login", `Bool v); ("user", `String u) ])
+        |> Lwt.return
+    | None ->
+        Response.of_json ~status:`OK (`Assoc [ ("login", `Bool v) ])
+        |> Lwt.return
   in
   match token with
   | Some t ->
-      let r = List.find_opt (fun a -> a = t) !logged_in_tokens in
-      Format.printf "%b\n@." (Option.is_none r);
-      resp (Option.is_none r)
-  | None -> resp true
+      let v = List.mem t !logged_in_tokens in
+      Format.printf "%b\n@." v;
+      if v then resp true (Some (decode_token t)) else resp false None
+  | None -> resp false None
 
 let logout req =
   let token = Request.header "auth" req in
@@ -97,6 +109,7 @@ let login req =
   if hash user_login.password = user_db.password then
     let token = encode_token user_db in
     let () = logged_in_tokens := token :: !logged_in_tokens in
+    (* user_db.token <- token; *)
     user_db |> yojson_of_user
     |> Response.of_json ~status:`OK
          ~headers:(Headers.add Headers.empty "auth" token)
@@ -108,14 +121,13 @@ let auth_middleware =
     if req.Request.target = "/login" || req.Request.target = "/register" then
       handler req
     else
-      let key = Context.Key.create ("user", sexp_of_user) in
       let* user =
         let token = Request.header "auth" req in
         match token with
-        | Some v -> Lwt.return (decode_token v)
+        | Some v -> Lwt.return (decode_token v |> user_of_string)
         | None -> Lwt.fail (request_error "Not authenticated" `Forbidden)
       in
-      let env = Context.add key user req.env in
+      let env = Context.add req_user_key user req.env in
       let req =
         Request.make ~version:req.version ~body:req.body ~env
           ~headers:req.headers req.target req.meth
@@ -132,8 +144,13 @@ let () =
   App.empty
   |> App.middleware @@ Middleware.logger
   |> App.middleware
-     @@ Middleware.allow_cors ~origins:[ "http://localhost:8000" ] ()
+     @@ Middleware.allow_cors
+          ~origins:[ "http://localhost:8000"; "http://localhost:5173" ]
+          ?headers:(Some [ "*" ]) ?expose:(Some [ "*" ])
+          ?methods:(Some [ `POST; `GET ])
+          ()
   |> App.middleware auth_middleware
   |> App.post "/register" register
+  |> App.get "/admin/users" admin_users
   |> App.post "/login" login |> App.get "/is_auth" is_auth
-  |> App.get "/logout" logout |> App.get "/" hello |> App.run_command
+  |> App.get "/logout" logout |> App.run_command
