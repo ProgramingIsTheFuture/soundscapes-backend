@@ -1,0 +1,390 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Backend application",
+    "description": "Backend application",
+    "version": "1.0.0"
+  },
+  "host": "localhost:3000",
+  "tags": [
+    {
+      "name": "admin",
+      "description": "Only adming has access"
+    },
+    {
+      "name": "auth",
+      "description": "Authentication"
+    }
+  ],
+  "paths": {
+    "/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "description": "Makes the login",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "login-user",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserLogin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "auth": {
+                "type": "string"
+              }
+            },
+            "description": "Returns header auth (with token) and user json",
+            "schema": {
+              "$ref": "#/definitions/UserComplete"
+            }
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "description": "Creates a new user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserRegister"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a message saying success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "description": "Logout",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "auth": {
+                "type": "string"
+              }
+            },
+            "description": "Returns header auth (with token) and user json",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/is_auth": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "description": "Logout",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "auth": {
+                "type": "string"
+              }
+            },
+            "description": "Returns header auth (with token) and user json",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/IsAuth"
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Logout",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns header auth (with token) and user json",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserComplete"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Create a user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "user",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Update users",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "required": true,
+            "name": "user_id",
+            "type": "string"
+          },
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "user",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New user data after the update",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/UserComplete"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Delete users",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "required": true,
+            "name": "user_id",
+            "type": "string"
+          },
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "UserLogin": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "ocaml@ocaml.org"
+        },
+        "password": {
+          "type": "string",
+          "example": "ocaml"
+        }
+      }
+    },
+    "UserComplete": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "example": "0655e7f4-612a-43e6-bdb0-0c9b848dcc65"
+        },
+        "username": {
+          "type": "string",
+          "example": "ocaml"
+        },
+        "email": {
+          "type": "string",
+          "example": "ocaml@ocaml.org"
+        },
+        "role": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "UserUpdate": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "example": "ocaml"
+        },
+        "email": {
+          "type": "string",
+          "example": "ocaml@ocaml.org"
+        },
+        "password": {
+          "type": "string",
+          "example": "mysecret"
+        },
+        "role": {
+          "type": "integer",
+          "example": 1
+        }
+      }
+    },
+    "UserRegister": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "example": "ocamllover"
+        },
+        "email": {
+          "type": "string",
+          "example": "ocamllover@ocaml.org"
+        },
+        "passwrod": {
+          "type": "string",
+          "example": "mysecretpassword"
+        }
+      }
+    },
+    "IsAuth": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "boolean",
+          "example": true
+        },
+        "user": {
+          "description": "String json encoded version of the user data",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

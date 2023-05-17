@@ -3,8 +3,6 @@ open Types
 open Db
 open Lwt.Infix
 
-(* docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=root -e POSTGRES_DB=pweb -d -p 5432:5432 postgres *)
-
 let logged_in_tokens : string list ref = ref []
 let ( let* ) = ( >>= )
 let ( let- ) = Lwt.catch
@@ -46,13 +44,68 @@ let response ~status msg =
 
 let req_user_key = Context.Key.create ("user", sexp_of_user)
 
-let admin_users req =
+let user_is_admin req =
   let user = Opium.Context.find_exn req_user_key req.Request.env in
   if user.role <> 1 then Lwt.fail (request_error "Not allowed" `Forbidden)
-  else
-    read_all_users () >>= fun u ->
-    let r = u |> List.map yojson_of_user in
-    `List r |> Response.of_json ~status:`OK |> Lwt.return
+  else Lwt.return user
+
+let admin_users req =
+  let* _ = user_is_admin req in
+  read_all_users () >>= fun u ->
+  let r = u |> List.map yojson_of_user in
+  `List r |> Response.of_json ~status:`OK |> Lwt.return
+
+let admin_user_change req =
+  let* _ = user_is_admin req in
+  let user_id = Router.param req "user_id" in
+  let* user_db = select_user_id user_id in
+  let* user = Request.to_json req in
+  let* user =
+    match user with
+    | Some v -> Lwt.return v
+    | None -> Lwt.fail (request_error "Invalid body" `Bad_request)
+  in
+  let user = user_of_yojson user in
+  let user_db =
+    if user_db.role <> user.role then { user_db with role = user.role }
+    else user_db
+  in
+  let user_db =
+    if user_db.email <> user.email then { user_db with email = user.email }
+    else user_db
+  in
+  let user_db =
+    if user_db.username <> user.username then
+      { user_db with username = user.username }
+    else user_db
+  in
+  let user_db =
+    if user_db.password <> (hash_password user).password then
+      { user_db with password = user.password }
+    else user_db
+  in
+  let* () = update_user user_db in
+  Response.of_json ~status:`OK (yojson_of_user user_db) |> Lwt.return
+
+let admin_user_delete req =
+  let* user = user_is_admin req in
+  let user_id = Router.param req "user_id" in
+  if user.id <> user_id then
+    let* () = delete_user user_id in
+    response ~status:`No_content "Deleted"
+  else Lwt.fail (request_error "User ID" `Bad_request)
+
+let admin_user_insert req =
+  let* _ = user_is_admin req in
+  let* user = Request.to_json req in
+  let* user =
+    match user with
+    | Some v -> Lwt.return v
+    | None -> Lwt.fail (request_error "Invalid body" `Bad_request)
+  in
+  let user = user_of_yojson user in
+  let* () = set_id user |> hash_password |> insert_user in
+  response ~status:`Created "Done!"
 
 let is_auth req =
   let token = Request.header "auth" req in
@@ -105,7 +158,7 @@ let login req =
     | None -> Lwt.fail (request_error "Invalid body" `Bad_request)
   in
   let user_login = user_login_of_yojson user in
-  let* user_db = select_user user_login.email in
+  let* user_db = select_user_email user_login.email in
   if hash user_login.password = user_db.password then
     let token = encode_token user_db in
     let () = logged_in_tokens := token :: !logged_in_tokens in
@@ -144,13 +197,15 @@ let () =
   App.empty
   |> App.middleware @@ Middleware.logger
   |> App.middleware
-     @@ Middleware.allow_cors
-          ~origins:[ "http://localhost:8000"; "http://localhost:5173" ]
-          ?headers:(Some [ "*" ]) ?expose:(Some [ "*" ])
-          ?methods:(Some [ `POST; `GET ])
+     @@ Middleware.allow_cors ~origins:[ "*" ] ?headers:(Some [ "*" ])
+          ?expose:(Some [ "*" ])
+          ?methods:(Some [ `POST; `GET; `PUT; `DELETE ])
           ()
   |> App.middleware auth_middleware
   |> App.post "/register" register
   |> App.get "/admin/users" admin_users
+  |> App.post "/admin/users" admin_user_insert
+  |> App.put "/admin/users/:user_id" admin_user_change
+  |> App.delete "/admin/users/:user_id" admin_user_delete
   |> App.post "/login" login |> App.get "/is_auth" is_auth
   |> App.get "/logout" logout |> App.run_command

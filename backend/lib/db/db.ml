@@ -43,6 +43,22 @@ let read_all_users () =
     ()
   |> make_query
 
+let update_user user =
+  [%rapper
+    execute
+      {sql|
+  UPDATE users 
+  SET 
+    username = %string{username},
+    email = %string{email},
+    password = %string{password},
+    role = %int{role}
+  WHERE id = %string{id};
+  |sql}
+      record_in]
+    user
+  |> make_query
+
 let insert_user user =
   [%rapper
     execute
@@ -54,12 +70,33 @@ let insert_user user =
     user
   |> make_query
 
-let select_user email =
+let select_user_id id =
   [%rapper
     get_one
       {sql|
-    SELECT @string{id}, @string{username}, @string{email}, @string{password}, @int{role} FROM users WHERE email = %string{email}
+    select @string{id}, @string{username}, @string{email}, @string{password}, @int{role} 
+    from users 
+    where id = %string{id}
+  |sql}
+      record_out]
+    ~id
+  |> make_query
+
+let select_user_email email =
+  [%rapper
+    get_one
+      {sql|
+    SELECT @string{id}, @string{username}, @string{email}, @string{password}, @int{role} 
+    FROM users 
+    WHERE email = %string{email}
   |sql}
       record_out]
     ~email
+  |> make_query
+
+let delete_user id =
+  [%rapper execute {sql|
+    DELETE FROM users WHERE id = %string{id}
+  |sql}]
+    ~id
   |> make_query
