@@ -139,3 +139,12 @@ let insert_playlists playlist =
       record_in]
     playlist
   |> make_query
+
+let delete_playlists id user_id =
+  [%rapper
+    execute
+      {sql|
+  DELETE FROM playlists WHERE id = %string{id} AND user_id = %string{user_id}
+  |sql}]
+    ~id ~user_id
+  |> make_query

@@ -128,6 +128,12 @@ let playlists_insert req =
   let* () = insert_playlists playlist in
   response ~status:`Created "Done!"
 
+let playlist_delete req =
+  let user = get_user req in
+  let id = Router.param req "id" in
+  let* () = delete_playlists id user.id in
+  response ~status:`Created "Done!"
+
 let is_auth req =
   let token = Request.header "auth" req in
   let resp v user =
@@ -229,6 +235,7 @@ let () =
   |> App.delete "/admin/users/:user_id" admin_user_delete
   |> App.get "/playlists" playlists_list
   |> App.post "/playlists" playlists_insert
+  |> App.delete "/playlists/:id" playlist_delete
   |> App.post "/register" register
   |> App.post "/login" login |> App.get "/is_auth" is_auth
   |> App.get "/logout" logout |> App.run_command

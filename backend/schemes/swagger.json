@@ -366,6 +366,44 @@
           }
         }
       }
+    },
+    "/playlists/{id}": {
+      "delete": {
+        "tags": [
+          "playlists"
+        ],
+        "description": "Deletes a playlist item",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "required": true,
+            "name": "id",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
