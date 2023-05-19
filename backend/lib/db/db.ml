@@ -31,7 +31,25 @@ let create_users_table =
  |sql}]
     ()
 
-let () = make_query create_users_table |> Lwt_main.run
+let create_playlists_table =
+  [%rapper
+    execute
+      {sql| CREATE TABLE IF NOT EXISTS playlists (
+        id uuid NOT NULL PRIMARY KEY,
+        name TEXT,
+        user_id uuid NOT NULL,
+        url TEXT,
+        CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
+      );
+ |sql}]
+    ()
+
+let () =
+  let open Lwt.Infix in
+  let p =
+    make_query create_users_table >>= fun _ -> make_query create_playlists_table
+  in
+  Lwt_main.run p
 
 let read_all_users () =
   [%rapper
@@ -99,4 +117,25 @@ let delete_user id =
     DELETE FROM users WHERE id = %string{id}
   |sql}]
     ~id
+  |> make_query
+
+let select_playlists user_id =
+  [%rapper
+    get_many
+      {sql|
+    SELECT @string{id}, @string{name}, @string{user_id}, @string{url} FROM playlists WHERE user_id = %string{user_id} 
+    |sql}
+      record_out]
+    ~user_id
+  |> make_query
+
+let insert_playlists playlist =
+  [%rapper
+    execute
+      {sql|
+    INSERT INTO playlists (id, name, user_id, url) VALUES
+    (%string{id}, %string{name}, %string{user_id}, %string{url})
+    |sql}
+      record_in]
+    playlist
   |> make_query

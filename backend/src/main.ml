@@ -43,9 +43,10 @@ let response ~status msg =
   Response.of_json ~status (`Assoc [ ("message", `String msg) ]) |> Lwt.return
 
 let req_user_key = Context.Key.create ("user", sexp_of_user)
+let get_user req = Opium.Context.find_exn req_user_key req.Request.env
 
 let user_is_admin req =
-  let user = Opium.Context.find_exn req_user_key req.Request.env in
+  let user = get_user req in
   if user.role <> 1 then Lwt.fail (request_error "Not allowed" `Forbidden)
   else Lwt.return user
 
@@ -105,6 +106,26 @@ let admin_user_insert req =
   in
   let user = user_of_yojson user in
   let* () = set_id user |> hash_password |> insert_user in
+  response ~status:`Created "Done!"
+
+let playlists_list req =
+  let user = get_user req in
+  let* playlists = select_playlists user.id in
+  yojson_of_list yojson_of_playlist playlists
+  |> Response.of_json ~status:`OK
+  |> Lwt.return
+
+let playlists_insert req =
+  let user = get_user req in
+  let* playlist = Request.to_json req in
+  let* playlist =
+    match playlist with
+    | Some p -> p |> playlist_of_yojson |> Lwt.return
+    | None -> Lwt.fail (request_error "Invalid body" `Bad_request)
+  in
+  let playlist = { playlist with id = new_uuid () } in
+  let playlist = { playlist with user_id = user.id } in
+  let* () = insert_playlists playlist in
   response ~status:`Created "Done!"
 
 let is_auth req =
@@ -202,10 +223,12 @@ let () =
           ?methods:(Some [ `POST; `GET; `PUT; `DELETE ])
           ()
   |> App.middleware auth_middleware
-  |> App.post "/register" register
   |> App.get "/admin/users" admin_users
   |> App.post "/admin/users" admin_user_insert
   |> App.put "/admin/users/:user_id" admin_user_change
   |> App.delete "/admin/users/:user_id" admin_user_delete
+  |> App.get "/playlists" playlists_list
+  |> App.post "/playlists" playlists_insert
+  |> App.post "/register" register
   |> App.post "/login" login |> App.get "/is_auth" is_auth
   |> App.get "/logout" logout |> App.run_command

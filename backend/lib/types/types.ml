@@ -13,7 +13,16 @@ type user = {
 type user_login = { email : string; password : string }
 [@@deriving yojson] [@@yojson.allow_extra_fields]
 
-let set_id user = { user with id = Uuidm.v `V4 |> Uuidm.to_string }
+type playlist = {
+  id : string; [@default ""]
+  name : string;
+  user_id : string; [@default ""]
+  url : string;
+}
+[@@deriving yojson] [@@yojson.allow_extra_fields]
+
+let new_uuid () = Uuidm.v `V4 |> Uuidm.to_string
+let set_id (user : user) = { user with id = new_uuid () }
 let hash s = Digestif.SHA256.digest_string s |> Digestif.SHA256.to_hex
 
 let hash_password (user : user) : user =

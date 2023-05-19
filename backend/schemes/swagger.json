@@ -298,6 +298,74 @@
           }
         }
       }
+    },
+    "/playlists": {
+      "get": {
+        "tags": [
+          "playlists"
+        ],
+        "description": "Get all my playlists (logged user)",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a list of playlists",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Playlist"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "playlists"
+        ],
+        "description": "Creates a new playlist item",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "required": true,
+            "name": "auth",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "playlist",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PlaylistCreation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -383,6 +451,40 @@
         "user": {
           "description": "String json encoded version of the user data",
           "type": "string"
+        }
+      }
+    },
+    "Playlist": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "example": "0655e7f4-612a-43e6-bdb0-0c9b848dcc65"
+        },
+        "name": {
+          "type": "string",
+          "example": "Heavy metal playlist"
+        },
+        "user_id": {
+          "type": "string",
+          "example": "0655e7f4-612a-43e6-bdb0-0c9b848dcc65"
+        },
+        "url": {
+          "type": "string",
+          "example": "https://open.spotify.com/track/5T0kuiSno6u5rkp7eSv1gD"
+        }
+      }
+    },
+    "PlaylistCreation": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Heavy metal playlist"
+        },
+        "url": {
+          "type": "string",
+          "example": "https://open.spotify.com/track/5T0kuiSno6u5rkp7eSv1gD"
         }
       }
     }
