@@ -1,20 +1,22 @@
 # Pweb Project
 
 This is the final project for web programing course.
+Backend application for [soundscapes](https://github.com/zazedd/soundscapes).
 
-Aplication flow:
+# Launch database
 
-- Admin can create pages from Text
-- These pages can be seen on the web or generate a PDF with them. (They will be like a learning resource about any topic)
-- Only users can access these resources
+```sh
+docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=root -e POSTGRES_DB=pweb -d -p 5432:5432 postgres
+```
 
-# Course objectives:
+# Launch swagger
 
-- Multiple user
-- Interact with external services
-- Generate PDFs
+```sh
+docker run -p 80:8080 -e SWAGGER_JSON=/tmp/swagger.json -v $(pwd)/schemes:/tmp --name swagger -d swaggerapi/swagger-ui
+```
 
-# My objectives:
+# Run ocaml project
 
-- Learn more about Lexing and Parsing with OCaml.
-- Play with Deno and Fresh
+```sh
+dune exec backend
+```
